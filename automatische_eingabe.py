@@ -9,8 +9,8 @@ import string
 import datetime
 import os
 
-# Log-Datei auf Desktop speichern
-logfile = os.path.expanduser("~/Desktop/auto_eingabe_log.txt")
+# Log-Datei im selben Ordner wie das Skript speichern
+logfile = os.path.join(os.path.dirname(__file__), "auto_eingabe_log.txt")
 
 # Einstellungen
 eingabe_delay = 0.3
@@ -21,19 +21,27 @@ max_len = 10
 woerter_liste = []
 stop_wort = ""
 ziel_position = None
+session_blacklist = set()
 
-def schreibe_log(eingabe):
+def schreibe_log(eingabe, status="OK"):
     try:
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open(logfile, "a", encoding="utf-8") as f:
-            f.write(f"[{timestamp}] {eingabe}\n")
+            f.write(f"[{timestamp}] {eingabe} -> {status}\n")
     except Exception as e:
         print(f"⚠ Log konnte nicht geschrieben werden: {e}")
 
-def zufaellige_kombination(min_len, max_len):
-    laenge = random.randint(min_len, max_len)
-    zeichen = string.ascii_letters + string.digits + string.punctuation
-    return ''.join(random.choice(zeichen) for _ in range(laenge))
+def zufaellige_kombination_einzigartig(min_len, max_len, blacklist):
+    versuche = 0
+    while versuche < 1000:
+        laenge = random.randint(min_len, max_len)
+        zeichen = string.ascii_letters + string.digits + string.punctuation
+        kombi = ''.join(random.choice(zeichen) for _ in range(laenge))
+        if kombi not in blacklist:
+            blacklist.add(kombi)
+            return kombi
+        versuche += 1
+    raise Exception("Keine neuen Kombinationen mehr verfügbar.")
 
 def lade_woerter(pfad):
     try:
@@ -58,31 +66,38 @@ def warte_auf_enter():
     eingabe_starten()
 
 def eingabe_starten():
+    global ziel_position
     pyautogui.click(ziel_position)
+
     for wort in woerter_liste:
         pyautogui.write(wort)
         pyautogui.press("enter")
-        schreibe_log(wort)
+        schreibe_log(wort, status="OK")
         if stop_wort and wort == stop_wort:
             messagebox.showinfo("Stop-Wort erreicht", "Eingabe beendet.")
             return
         time.sleep(eingabe_delay)
 
     for _ in range(zufall_anzahl):
-        wort = zufaellige_kombination(min_len, max_len)
-        pyautogui.write(wort)
-        pyautogui.press("enter")
-        schreibe_log(wort)
-        if stop_wort and wort == stop_wort:
-            messagebox.showinfo("Stop-Wort erreicht", "Eingabe beendet.")
+        try:
+            wort = zufaellige_kombination_einzigartig(min_len, max_len, session_blacklist)
+            pyautogui.write(wort)
+            pyautogui.press("enter")
+            schreibe_log(wort, status="OK")
+            if stop_wort and wort == stop_wort:
+                messagebox.showinfo("Stop-Wort erreicht", "Eingabe beendet.")
+                return
+            time.sleep(eingabe_delay)
+        except Exception as e:
+            messagebox.showerror("Fehler", f"Keine neuen Kombinationen verfügbar:\n{e}")
             return
-        time.sleep(eingabe_delay)
 
     messagebox.showinfo("Fertig", "Eingabe abgeschlossen.")
 
 def eingabe_vorbereiten():
     try:
-        global min_len, max_len, zufall_anzahl, eingabe_delay, start_delay, stop_wort
+        global min_len, max_len, zufall_anzahl, eingabe_delay, start_delay, stop_wort, session_blacklist
+        session_blacklist = set()  # bei jedem neuen Start leeren
         min_len = int(entry_min_len.get())
         max_len = int(entry_max_len.get())
         zufall_anzahl = int(entry_zufall.get())
