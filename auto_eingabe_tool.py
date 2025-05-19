@@ -31,7 +31,6 @@ zufall_anzahl = 10
 min_len = 5
 max_len = 10
 woerter_liste = []
-stop_wort = ""
 ziel_position = None
 session_blacklist = set()
 
@@ -96,9 +95,6 @@ def eingabe_starten():
         pyautogui.write(wort)
         pyautogui.press("enter")
         schreibe_log(wort, status="OK")
-        if stop_wort and wort == stop_wort:
-            messagebox.showinfo("Stop-Wort erreicht", "Eingabe beendet.")
-            return
         time.sleep(eingabe_delay)
         if keyboard.is_pressed("esc"):
             messagebox.showinfo("Abbruch", "Eingabe wurde per ESC gestoppt.")
@@ -110,9 +106,6 @@ def eingabe_starten():
             pyautogui.write(wort)
             pyautogui.press("enter")
             schreibe_log(wort, status="OK")
-            if stop_wort and wort == stop_wort:
-                messagebox.showinfo("Stop-Wort erreicht", "Eingabe beendet.")
-                return
             time.sleep(eingabe_delay)
             if keyboard.is_pressed("esc"):
                 messagebox.showinfo("Abbruch", "Eingabe wurde per ESC gestoppt.")
@@ -125,14 +118,13 @@ def eingabe_starten():
 
 def eingabe_vorbereiten():
     try:
-        global min_len, max_len, zufall_anzahl, eingabe_delay, start_delay, stop_wort, session_blacklist
+        global min_len, max_len, zufall_anzahl, eingabe_delay, start_delay, session_blacklist
         session_blacklist = set()  # bei jedem neuen Start leeren
         min_len = int(entry_min_len.get())
         max_len = int(entry_max_len.get())
         zufall_anzahl = int(entry_zufall.get())
         eingabe_delay = float(entry_delay.get())
         start_delay = float(entry_start_delay.get())
-        stop_wort = entry_stopwort.get()
 
         threading.Thread(target=warte_auf_mausklick, daemon=True).start()
         threading.Thread(target=warte_auf_enter, daemon=True).start()
@@ -174,10 +166,6 @@ tk.Label(root, text="Maximale Zeichenlänge:").grid(row=4, column=0)
 entry_max_len = tk.Entry(root)
 entry_max_len.insert(0, "10")
 entry_max_len.grid(row=4, column=1)
-
-tk.Label(root, text="Stop-Wort:").grid(row=5, column=0)
-entry_stopwort = tk.Entry(root)
-entry_stopwort.grid(row=5, column=1)
 
 label_datei = tk.Label(root, text="Keine Wörterdatei geladen")
 label_datei.grid(row=6, column=0, columnspan=2)
