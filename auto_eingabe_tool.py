@@ -1,4 +1,3 @@
-
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import pyautogui
@@ -42,13 +41,24 @@ def schreibe_log(eingabe, status="OK"):
         with open(logfile, "a", encoding="utf-8") as f:
             f.write(f"[{timestamp}] {eingabe} -> {status}\n")
     except Exception as e:
-        print(f"⚠ Log konnte nicht geschrieben werden: {e}")
+        print(f"\u26a0 Log konnte nicht geschrieben werden: {e}")
 
 def zufaellige_kombination_einzigartig(min_len, max_len, blacklist):
     versuche = 0
+    zeichen = ''
+    if use_uppercase.get():
+        zeichen += string.ascii_uppercase
+    if use_lowercase.get():
+        zeichen += string.ascii_lowercase
+    if use_digits.get():
+        zeichen += string.digits
+    if use_specials.get():
+        zeichen += string.punctuation
+    if not zeichen:
+        raise Exception("Keine Zeichentypen ausgewählt!")
+
     while versuche < 1000:
         laenge = random.randint(min_len, max_len)
-        zeichen = string.ascii_letters + string.digits + string.punctuation
         kombi = ''.join(random.choice(zeichen) for _ in range(laenge))
         if kombi not in blacklist:
             blacklist.add(kombi)
@@ -90,6 +100,9 @@ def eingabe_starten():
             messagebox.showinfo("Stop-Wort erreicht", "Eingabe beendet.")
             return
         time.sleep(eingabe_delay)
+        if keyboard.is_pressed("esc"):
+            messagebox.showinfo("Abbruch", "Eingabe wurde per ESC gestoppt.")
+            return
 
     for _ in range(zufall_anzahl):
         try:
@@ -101,6 +114,9 @@ def eingabe_starten():
                 messagebox.showinfo("Stop-Wort erreicht", "Eingabe beendet.")
                 return
             time.sleep(eingabe_delay)
+            if keyboard.is_pressed("esc"):
+                messagebox.showinfo("Abbruch", "Eingabe wurde per ESC gestoppt.")
+                return
         except Exception as e:
             messagebox.showerror("Fehler", f"Keine neuen Kombinationen verfügbar:\n{e}")
             return
@@ -169,7 +185,18 @@ label_datei.grid(row=6, column=0, columnspan=2)
 tk.Button(root, text="Wörterdatei laden", command=datei_auswaehlen).grid(row=7, column=0, columnspan=2, pady=5)
 tk.Button(root, text="Eingabe vorbereiten (Mausklick + ENTER)", command=eingabe_vorbereiten, bg="green", fg="white").grid(row=8, column=0, columnspan=2, pady=10)
 
-info_label = tk.Label(root, text="⬆ Lade zuerst eine Wörterdatei und klicke dann 'Eingabe vorbereiten'")
-info_label.grid(row=9, column=0, columnspan=2)
+# Optionen für Zeichentypen
+use_uppercase = tk.BooleanVar(value=True)
+use_lowercase = tk.BooleanVar(value=True)
+use_digits = tk.BooleanVar(value=True)
+use_specials = tk.BooleanVar(value=True)
+
+tk.Checkbutton(root, text="Großbuchstaben (A-Z)", variable=use_uppercase).grid(row=10, column=0, sticky="w")
+tk.Checkbutton(root, text="Kleinbuchstaben (a-z)", variable=use_lowercase).grid(row=10, column=1, sticky="w")
+tk.Checkbutton(root, text="Zahlen (0-9)", variable=use_digits).grid(row=11, column=0, sticky="w")
+tk.Checkbutton(root, text="Sonderzeichen (!@#)", variable=use_specials).grid(row=11, column=1, sticky="w")
+
+info_label = tk.Label(root, text="⬆ Lade zuerst eine Wörterdatei und klicke dann 'Eingabe vorbereiten'. ESC = Abbruch")
+info_label.grid(row=12, column=0, columnspan=2)
 
 root.mainloop()
